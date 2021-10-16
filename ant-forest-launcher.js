@@ -6797,7 +6797,7 @@ let $$af = {
                 messageAction(e.message, 4, 1, 0, -1);
                 messageAction(e.stack, 4, 0, 0, 1);
             }
-            this.exitNow();
+            $$app.exit()
         },
     },
     rl: {
