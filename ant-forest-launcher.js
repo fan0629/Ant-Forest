@@ -6791,6 +6791,7 @@ let $$af = {
             });
         },
         exitNow: () => $$app.exit(),
+        cleanRam: () => appx.killProcess(),
         err(e) {
             if (!e.message.match(/InterruptedException/)) {
                 messageAction(e.message, 4, 1, 0, -1);
@@ -6959,6 +6960,7 @@ let $$af = {
         Promise.all([_.showResult(), _.readyExit()])
             .then(_.scrOffIFN)
             .then(_.exitNow)
+            .then(_.cleanRam)
             .catch(_.err);
     },
     $bind() {
