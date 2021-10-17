@@ -6945,6 +6945,11 @@ let $$af = {
     },
     collect() {
         let {own, fri} = this._collector;
+        for (let i = 0; i < 5;i++) {
+            click(280, 500)
+            click(500, 500)
+            sleep(400)
+        }
         own.trigger() && own.init().collect();
         if (new Date().getHours() == 0 && new Date().getMinutes() < 5) {
             $$app.monitor.mask_layer.interrupt()
