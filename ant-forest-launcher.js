@@ -6946,6 +6946,19 @@ let $$af = {
     collect() {
         let {own, fri} = this._collector;
         own.trigger() && own.init().collect();
+        if (new Date().getHours() == 0 && new Date().getMinutes() < 5) {
+            $$app.monitor.mask_layer.interrupt()
+            log("使用能量双击卡");
+            sleep(500);
+            click(240, 1600);
+            sleep(1500);
+            let obj = text("能量双击卡").findOnce();
+            obj.parent().findOne(text("使用")).click();
+            sleep(1000);
+            click("立即使用");
+            sleep(500)
+            $$app.monitor.mask_layer.start();
+        }
         fri.trigger() && fri.init().collect();
         return $$af;
     },
