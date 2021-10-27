@@ -6892,7 +6892,7 @@ let $$af = {
         Promise.all([_.showResult(), _.readyExit()])
             .catch(_.err).then(_.scrOffIFN)
             .catch(_.err).then(_.exitNow)
-            //.catch(_.err).then(_.cleanRam());
+            .catch(_.err).then(_.cleanRam)
     },
     $bind() {
         let _c = this._collector;
