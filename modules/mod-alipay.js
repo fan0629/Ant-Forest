@@ -1,14 +1,13 @@
 let {
     $$num, $$str, isPlainObject,
-} = require('./ext-global');
-
+} = require('./mod-global');
 let {appx} = require('./ext-app');
 
 let exp = {
     package_name: 'com.eg.android.AlipayGphone',
     app_name: String.unEsc('652F4ED85B9D'),
     /**
-     * @type {External.Alipayx['app_preset']}
+     * @type {Mod.Alipay['app_preset']}
      */
     app_preset: {
         af_homepage: ['https://60000002.h5app.alipay.com/www/home.html', {
@@ -33,9 +32,9 @@ let exp = {
         account_nickname: 20000141,
     },
     /**
-     * @param {Alipayx.App.Id|[string,object]} app_id
-     * @param {?Alipayx.App.URL|Alipayx.JSBridge.WebviewOptions} [url]
-     * @param {Alipayx.JSBridge.WebviewOptions} [webview_options]
+     * @param {Alipay.App.Id|[string,object]} app_id
+     * @param {?Alipay.App.URL|Alipay.JSBridge.WebviewOptions} [url]
+     * @param {Alipay.JSBridge.WebviewOptions} [webview_options]
      * @return {boolean}
      */
     startApp(app_id, url, webview_options) {
@@ -64,7 +63,7 @@ let exp = {
                         _o.url = {src: url[0], query: url[1]};
                     }
                     /**
-                     * @type {Alipayx.JSBridge.WebviewOptions}
+                     * @type {Alipay.JSBridge.WebviewOptions}
                      */
                     _o.__webview_options__ = Object.assign({
                         appClearTop: 'YES',
@@ -84,6 +83,6 @@ let exp = {
 };
 
 /**
- * @type {External.alipayx}
+ * @type {Mod.alipay}
  */
-module.exports = {alipayx: exp};
+module.exports = {alipay: exp};

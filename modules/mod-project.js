@@ -1,7 +1,7 @@
 let {
     $$cvt, isNullish,
-} = require('./ext-global');
-
+} = require('./mod-global');
+let {appx} = require('./ext-app');
 let {httpx} = require('./ext-http');
 let {filesx} = require('./ext-files');
 let {threadsx} = require('./ext-threads');
@@ -43,144 +43,35 @@ let _ = {
     },
 };
 
-let ver = {
-    /**
-     * Returns if a version is ignored in the given list
-     * @param {string|{version_name:string}} ver
-     * @param {string[]} [list]
-     * @return {boolean}
-     */
-    isIgnored(ver, list) {
-        let _ls = list || _.ignore_list;
-        if (!_ls) {
-            throw Error('No available list for projectx.version.isIgnored()');
-        }
-        return typeof ver === 'string' ? _ls.includes(ver) : _ls.includes(ver.version_name);
-    },
-    /**
-     * Returns if a version is not ignored in the given list
-     * @param {string|{version_name:string}} ver
-     * @param {string[]} [list]
-     * @return {boolean}
-     */
-    isCared(ver, list) {
-        let _ls = list || _.ignore_list;
-        if (!_ls) {
-            throw Error('No available list for projectx.version.isCared()');
-        }
-        return !this.isIgnored(ver, _ls);
-    },
-    /**
-     * @param {string|number|{version_name:string}} ver
-     * @param {Object} [options]
-     * @param {'number'|'string'|'string_with_prefix'} [options.type='string']
-     * @example
-     * console.log(projectx.version.getHex('v2.0.4 Alpha4')); // '02000404'
-     * console.log(projectx.version.getHex('v13.120.14 Beta3')); // '0d780e83'
-     * console.log(projectx.version.getHex('v10.2.0')); // '0a0200ff'
-     * console.log(projectx.version.getHex('v10.2.0', {type: 'number'})); // 167903487
-     * @return {string|number}
-     */
-    getHex(ver, options) {
-        if (typeof ver === 'object') {
-            ver = ver.version_name;
-        }
-        if (!ver) {
-            throw Error('A "version" must be defined for projectx.version.getHex()');
-        }
-        let _opt = options || {};
-        let _hexStr = s => ('00' + Number(s || 0).toString(16)).slice(-2);
-        let _max_a = 0x80;
-        let _max_b = 0xFF - _max_a;
-        let _rex = /^[a-z\s]*(\d+)(?:\.(\d+)(?:\.(\d+)(?:-\d+)?\s*(b(?:eta)?|a(?:lpha)?)?\s*(\d*))?)?$/i;
-        let _str = ver.toString().trim().replace(_rex, ($0, $1, $2, $3, $4, $5) => {
-            let _$a = [$1, $2, $3].map(s => _hexStr(s)).reduce((a, b) => a + b);
-            let _$5 = $5 ? Number($5) : 1;
-            let _$4 = 0xFF;
-            if ($4) {
-                if ($4.match(/b(eta)?/i)) {
-                    if (_$5 >= _max_b) {
-                        throw Error('Beta version code must be smaller than\x20' + _max_b);
-                    }
-                    _$4 = _max_a;
-                } else if ($4.match(/a(lpha)?/i)) {
-                    if (_$5 > _max_a) {
-                        throw Error('Alpha version code cannot be greater than\x20' + _max_a);
-                    }
-                    _$4 = 0;
-                }
-            }
-            let _$b = _hexStr(Math.min(_$4 + _$5, 0xFF));
-            return _$a + _$b;
-        });
-        let _hex = '0x' + _str;
-        return _opt.type === 'number' ? Number(_hex) : _opt.type === 'string_with_prefix' ? _hex : _str;
-    },
-    /**
-     * @param {number|string} ver
-     * @param {?string} [prefix='v']
-     * @example
-     * console.log(projectx.version.parseHex('02000404')); // 'v2.0.4 Alpha4'
-     * console.log(projectx.version.parseHex('0d780e83')); // 'v13.120.14 Beta3'
-     * console.log(projectx.version.parseHex('0a0200ff')); // 'v10.2.0'
-     * console.log(projectx.version.parseHex(167903487)); // 'v10.2.0'
-     * @return {string}
-     */
-    parseHex(ver, prefix) {
-        if (typeof ver === 'number') {
-            ver = ('0'.repeat(7) + ver.toString(16)).slice(-8);
-        }
-        if (!ver) {
-            throw Error('A "version" must be defined for projectx.version.parseHex()');
-        }
-        let _max_alpha = 0x80;
-        return ver.replace(/^0x/, '').replace(/(..)(..)(..)(..)/g, ($0, $1, $2, $3, $4) => {
-            let _$a = [$1, $2, $3].map(s => Number('0x' + s)).join('.');
-            let _$4 = Number('0x' + $4);
-            let _$b = '';
-            if (_$4 <= _max_alpha) {
-                _$b = '\x20Alpha' + (_$4 === 1 ? '' : _$4);
-            } else if (_$4 < 0xFF) {
-                _$4 -= _max_alpha;
-                _$b = '\x20Beta' + (_$4 === 1 ? '' : _$4);
-            }
-            return (prefix === null ? '' : prefix || 'v') + _$a + _$b;
-        });
-    },
-    /**
-     * @param {string} ver
-     * @example
-     * console.log(projectx.version.parseName('2.0.4')); // "v2.0.4"
-     * console.log(projectx.version.parseName('v2.0.4')); // "v2.0.4"
-     * console.log(projectx.version.parseName('v2.0.4a7')); // "v2.0.4 Alpha7"
-     * console.log(projectx.version.parseName('v2.0.4 a7')); // "v2.0.4 Alpha7"
-     * console.log(projectx.version.parseName('v2.0.4 alpha7')); // "v2.0.4 Alpha7"
-     * console.log(projectx.version.parseName('2.0.4 alpha 7')); // "v2.0.4 Alpha7"
-     * @return {string}
-     */
-    parseName(ver) {
-        let _rex = /^v?\d+\.\d+\.\d+\s*(a(lpha)?|b(eta)?)?\s*\d*$/i;
-        return ver.match(_rex) ? this.parseHex(this.getHex(ver)) : '';
-    },
-    /**
-     * Returns if 1st version is newer than 2nd version
-     * @example Source code summary (zh-CN: 源代码摘要)
-     * return verWeight(a) > verWeight(b);
-     * @example
-     * console.log(projectx.version.isNewer('v2.0.4, 'v2.0.1')); // true
-     * console.log(projectx.version.isNewer('v2.0.4 Alpha7', 'v2.0.4')); // false
-     * console.log(projectx.version.isNewer('v2.0.4 Beta2', 'v2.0.4 Alpha3')); // true
-     * @param {string|{version_name:string}} a
-     * @param {string|{version_name:string}} b
-     * @return {boolean}
-     */
-    isNewer(a, b) {
-        return this.getHex(a) > this.getHex(b);
-    },
-};
-
 let exp = {
-    version: ver,
+    version: {
+        /**
+         * Returns if a version is ignored in the given list
+         * @param {string|{version_name:string}} ver
+         * @param {string[]} [list]
+         * @return {boolean}
+         */
+        isIgnored(ver, list) {
+            let _ls = list || _.ignore_list;
+            if (!_ls) {
+                throw Error('No available list for project.version.isIgnored()');
+            }
+            return typeof ver === 'string' ? _ls.includes(ver) : _ls.includes(ver.version_name);
+        },
+        /**
+         * Returns if a version is not ignored in the given list
+         * @param {string|{version_name:string}} ver
+         * @param {string[]} [list]
+         * @return {boolean}
+         */
+        isCared(ver, list) {
+            let _ls = list || _.ignore_list;
+            if (!_ls) {
+                throw Error('No available list for project.version.isCared()');
+            }
+            return !this.isIgnored(ver, _ls);
+        },
+    },
     /**
      * @param {...string[]} [children]
      * @return {string}
@@ -191,7 +82,7 @@ let exp = {
     },
     /**
      * @example
-     * console.log(projectx.getLocal().version_name); // like: 'v2.0.2 Alpha2'
+     * console.log(project.getLocal().version_name); // like: 'v2.0.2 Alpha2'
      * @return {{
      *     version_name: string,
      *     version_code: number,
@@ -204,7 +95,7 @@ let exp = {
         let _ver_code = -1;
         let _path = this.getLocalPath();
         if (!_path) {
-            throw Error('Cannot locate project path for projectx.getLocal()');
+            throw Error('Cannot locate project path for project.getLocal()');
         }
         let _json_name = 'project.json';
         let _json_path = files.join(_path, _json_name);
@@ -279,9 +170,9 @@ let exp = {
      * @param {...string[]} [children]
      * @example
      * // like: '/storage/emulated/0/Scripts/Ant-Forest-003/assets'
-     * console.log(projectx.getAssetPath());
+     * console.log(project.getAssetPath());
      * // like: '/storage/emulated/0/Scripts/Ant-Forest-003/assets/images'
-     * console.log(projectx.getAssetPath('images'));
+     * console.log(project.getAssetPath('images'));
      * @return {string}
      */
     getAssetPath(children) {
@@ -630,7 +521,7 @@ let exp = {
      * @param {string} [options.success_title]
      * @param {string[]} [options.ignore_list]
      * @example
-     * projectx.deploy('latest');
+     * project.deploy('latest');
      */
     deploy(version, callback, options) {
         let _opt = options || {};
@@ -657,7 +548,7 @@ let exp = {
         };
 
         if (isNullish(version)) {
-            throw Error('A version for projectx.deploy() must be defined');
+            throw Error('A version for project.deploy() must be defined');
         }
         if (typeof version === 'string') {
             version = _getVersionByTag(version);
@@ -666,12 +557,12 @@ let exp = {
                     delete global._$_get_proj_releases_interrupted;
                     return;
                 } else {
-                    throw Error('Cannot parse version tag for projectx.deploy()');
+                    throw Error('Cannot parse version tag for project.deploy()');
                 }
             }
         }
         if (typeof version !== 'object') {
-            throw Error('Cannot parse version for projectx.deploy()');
+            throw Error('Cannot parse version for project.deploy()');
         }
 
         // maybe 'tar' will be supported some day
@@ -815,7 +706,7 @@ let exp = {
 
         let _now_ts = Date.now();
         let _local_ver_name = this.getLocalVerName();
-        let _local_ver_hex = this.version.getHex(_local_ver_name);
+        let _local_ver_hex = appx.version.getHex(_local_ver_name);
 
         let _def_bak_path = filesx['.local']('bak', 'ant-forest');
         let _bak_file_name = $$cvt.date(_now_ts, 'yyMMddhhmmss') + '-' + _local_ver_hex + '.zip';
@@ -827,7 +718,7 @@ let exp = {
                 _cwd = files.cwd();
             }
             if (!files.isDir(_cwd)) {
-                throw Error('source_path for projectx.backup must be a directory');
+                throw Error('source_path for project.backup must be a directory');
             }
             if (this.isAlike(_cwd)) {
                 return _cwd;
@@ -957,10 +848,10 @@ let exp = {
                     action: () => {
                         let _src = files.path(source);
                         if (!files.exists(_src)) {
-                            throw Error('Source file of projectx.restore() doesn\'t exist');
+                            throw Error('Source file of project.restore() doesn\'t exist');
                         }
                         if (!filesx.isValidZip(_src)) {
-                            throw Error('Source file of projectx.restore() is corrupted');
+                            throw Error('Source file of project.restore() is corrupted');
                         }
                         return {zip_src_file: _src};
                     },
@@ -1078,6 +969,6 @@ let exp = {
 };
 
 /**
- * @type {External.projectx}
+ * @type {Mod.project}
  */
-module.exports = {projectx: exp};
+module.exports = {project: exp};
