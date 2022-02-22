@@ -6751,7 +6751,6 @@ let $$af = {
             });
         },
         exitNow: () => $$app.exit(),
-        cleanRam: () => appx.killProcess(),
         err(e) {
             if (!e.message.match(/InterruptedException/)) {
                 consolex.$(e.message, 4, 1, 0, -1);
@@ -6923,9 +6922,9 @@ let $$af = {
         let _ = this._epilogue_setter;
         _.logBackIFN();
         Promise.all([_.showResult(), _.readyExit()])
-            .catch(_.err).then(_.scrOffIFN)
-            .catch(_.err).then(_.exitNow)
-            .catch(_.err).then(_.cleanRam)
+            .then(_.scrOffIFN)
+            .then(_.exitNow)
+            .catch(_.err);
     },
     $bind() {
         let _c = this._collector;
